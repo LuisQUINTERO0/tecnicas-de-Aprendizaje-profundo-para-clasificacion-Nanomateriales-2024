@@ -1,3 +1,12 @@
+% Este código está bajo la licencia GPL y está diseñado para organizar y gestionar imágenes en un directorio. Su propósito principal 
+es trabajar con imágenes de nanomateriales clasificadas en tres categorías. El código redimensiona cada imagen a una escala de 224x224 píxeles, 
+manteniendo su formato en JPG, aunque este puede modificarse a cualquier otro formato de preferencia.
+Además, el programa organiza las imágenes creando carpetas en el directorio correspondiente y almacena las imágenes de cada categoría en una 
+carpeta específica.
+Cada imagen es etiquetada con el nombre de su clase y una numeración secuencial, lo que facilita su uso en otras tareas de procesamiento y 
+lectura, garantizando que las imágenes estén adecuadamente ordenadas. También incluye una funcionalidad para convertir las imágenes a escala
+de grises, realizando los ajustes necesarios en la imagen original.
+
 *Specific route*
 %Specifies the main folder where the subfolders with images are located.
 main_folder = 'C:\Users\Desktop\NMs';
