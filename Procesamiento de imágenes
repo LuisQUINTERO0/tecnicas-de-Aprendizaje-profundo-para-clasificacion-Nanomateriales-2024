@@ -1,0 +1,55 @@
+*Specific route*
+%Specifies the main folder where the subfolders with images are located.
+main_folder = 'C:\Users\Desktop\NMs';
+
+% Getting all subfolders inside the main folder.
+subfolders = dir(main_folder);
+subfolders = subfolders([subfolders.isdir]);  % Filter only folders.
+
+% Counter to number the images.
+counter_images = 1;
+
+% Scrolls each subfolder
+for i = 1:numel(subfolders)
+    name_subfolder = subfolders(i).name;
+    if ~strcmp(name_subfolder, '.') && ~strcmp(name_subfolder, '..')
+
+% Reads all images inside the current subfolder.
+        current_folder = fullfile(main_folder, name_subfolder);
+        image_files = dir(fullfile(current_folder, '*.jpg'));  % Change format according to your images.
+
+% Creates a folder to store the resized images.
+        destination_folder = fullfile(main_folder,'resized_images',name_subfolder);
+        if ~exist(destination_folder, 'dir')
+            mkdir(destination_folder);
+        end
+
+% Iterate over each image file.
+        for j = 1:numel(image_files)
+            image_name = image_files(j).name;
+            image_path = fullfile(current_folder, image_name);
+
+*Pre-preparedness on images*
+
+% Read the image.
+            image = imread(image_path);
+% Define the dimensions of the images.
+            new_height = 224;
+            new_width = 224;
+            resized_image = imresize(image, [new_height, new_width]);
+            counter_images = counter_images + 1;
+            
+*Saving of images*
+
+            % Saves images individually according to their folder name.
+            [~, base_name, ~] = fileparts(image_name);  % Extracts the base name without extension.
+            file_name = [subfolder_name '_' base_name '.jpg'];  
+            % File name with label, extension can be changed if desired.
+
+            % Save the resized image inside the destination folder.
+            saved_route = fullfile(destination_folder, file_name);
+            imwrite(resized_image, saved_route);
+        end
+    end
+end
+disp('Finshed.');
