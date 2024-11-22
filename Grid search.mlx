@@ -1,0 +1,100 @@
+%Grid search
+
+
+tic
+fprintf("\nStarting....\n")
+%% Separation of data.
+imds = imageDatastore('C:\Users\Desktop\New folder\GridSearchFinal',...
+    'FileExtensions',{'.jpg'},...
+    'IncludeSubfolders',true,'LabelSource','foldernames')
+[imdsTrain,imdsValidation] = splitEachLabel(imds,0.7,'randomized');
+
+%% Data augmentation.
+imageAugmenter = imageDataAugmenter( ...
+    'RandRotation',[0,360], ...
+    'RandScale',[0.5,1.5])
+inputSize = [224 224 3];
+augimdsTrain = augmentedImageDatastore(inputSize(1:3),imdsTrain,'DataAugmentation',imageAugmenter);
+augimdsValidation = augmentedImageDatastore(inputSize(1:3),imdsValidation);
+
+N=[0.01,0.001,0.0001];
+minibatch=[1,7,14];
+Epoch=[5,10,25];
+optmz={'sgdm','adam','rmsprop'};
+layerss=[3,4,5];
+accuracyVGG16=    zeros(3,3,3,3);% 81
+accuracyResnet50= zeros(3,3,3,3); %243
+accuracyCUSTOM=   zeros(3,3,3,3,3);
+accuracyAlexnet=  zeros(3,3,3,3);
+for i=1:length(N)
+    for j=1:length(minibatch)
+        for  k=1:length(Epoch)
+            for  l=1:length(optmz)
+                try
+                [accuracyVGG16(i,j,k,l),~,~,~,~]= VGG16(imdsTrain,imdsValidation,augimdsValidation,augimdsTrain,N(i),minibatch(j),Epoch(k),optmz(l))
+                catch  ME
+                    disp(ME.message)
+                    accuracyVGG16(i,j,k,l)=0;
+                end
+                try
+                    [accuracyResnet50(i,j,k,l),~,~,~,~]= Resnet50(imdsTrain,imdsValidation,augimdsValidation,augimdsTrain,N(i),minibatch(j),Epoch(k),optmz(l))
+                catch ME
+                    disp(ME.message)
+                    accuracyResnet50(i,j,k,l)=0;
+                end
+                try
+                    [accuracyAlexnet(i,j,k,l),~,~,~,~]= Alexnet(imdsTrain,imdsValidation,augimdsValidation,augimdsTrain,N(i),minibatch(j),Epoch(k),optmz(l))
+                catch ME
+                    disp(ME.message)
+                    accuracyAlexnet(i,j,k,l)=0;
+                end
+
+                for m=1:length(layerss)
+                    try
+
+                        [accuracyCUSTOM(i,j,k,l,m),~,~,~,~]= CUSTOM(imdsTrain,imdsValidation,augimdsValidation,augimdsTrain,inputSize,N(i),minibatch(j),Epoch(k),optmz(l),m);
+                    catch
+                        accuracyCUSTOM(i,j,k,l,m)=0;
+                    end
+                end
+            end
+        end
+    end
+end
+%% Obtaining the best parameters for the CUSTOM model.
+[M,I]=max(accuracyCUSTOM,[],"all","linear");
+[i,j,k,l,m]=ind2sub(size(accuracyCUSTOM),I);
+Ncustom=N(i(1));
+minibatchcustom=minibatch(j(1));
+Epochcustom=Epoch(k(1));
+optmzcustom=optmz(l(1));
+layersscustom=layerss(m(1));
+
+%% Obtaining the best parameters for the VGG16 model.
+[M1,I]=max(accuracyVGG16,[],"all","linear");
+[i,j,k,l]=ind2sub(size(accuracyVGG16),I);
+NVGG16=N(i(1));
+minibatchVGG16=minibatch(j(1));
+EpochVGG16=Epoch(k(1));
+optmzVGG16=optmz(l(1));
+
+%% Obtaining the best parameters for the Resnet50 model.
+[R1,H]=max(accuracyResnet50,[],"all","linear");
+[i,j,k,l]=ind2sub(size(accuracyResnet50),H);
+NResnet50=N(i(1));
+minibatchresnet50=minibatch(j(1));
+EpochResnet50=Epoch(k(1));
+optmzResnet50=optmz(l(1));
+            
+%% Obtaining the best parameters for the Alexnet model.
+[a1,n]=max(accuracyAlexnet,[],"all","linear");
+[i,j,k,l]=ind2sub(size(accuracyAlexnet),n);
+NAlexnet=N(i(1));
+minibatchAlexnet=minibatch(j(1));
+EpochAlexnet=Epoch(k(1));
+optmzAlexnet=optmz(l(1));
+
+fprintf("Finished...\n")
+tEnd=toc;
+h=tEnd/60;
+fprintf(' %d hours and %d minutes and %f seconds\n',floor(h/ 60), floor(tEnd/60), rem(tEnd,60));
