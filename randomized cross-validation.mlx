@@ -1,0 +1,84 @@
+%randomized cross-validation
+
+
+%tic
+fprintf("\nStarting....\n")
+accuracyCUSTOM  =zeros(1,10);
+accuracyVGG16   =zeros(1,10);
+accuracyResnet50=zeros(1,10);
+accuracyAlexnet =zeros(1,10);
+
+cmCUSTOM = zeros(3,3,10);
+cmVGG16 = zeros(3,3,10);
+cmResnet50 = zeros(3,3,10);
+cmAlexnet = zeros(3,3,10);
+
+infoCUSTOM = cell(1,10);
+infoVGG16 = cell(1,10);
+infoResnet50 = cell(1,10);
+infoAlexnet = cell(1,10);
+
+rocObjCUSTOM = cell(1,10);
+rocObjVGG16 = cell(1,10);
+rocObjResnet50 = cell(1,10);
+rocObjAlexnet = cell(1,10);
+
+%% Separation of data.
+imds = imageDatastore('C:\Users\Desktop\New folder\CrossValidation',...
+    'FileExtensions',{'.jpg'},...
+    'IncludeSubfolders',true,'LabelSource','foldernames')
+%% Data augmentation.
+imageAugmenter = imageDataAugmenter( ...
+    'RandRotation',[0,360], ...
+    'RandScale',[0.5,1.5])
+inputSize = [224 224 3];
+
+for i=1:10
+    [imdsTrain,imdsValidation] = splitEachLabel(imds,0.7,'randomized');
+    augimdsTrain = augmentedImageDatastore(inputSize(1:3),imdsTrain,'DataAugmentation',imageAugmenter);
+    augimdsValidation = augmentedImageDatastore(inputSize(1:3),imdsValidation);
+
+    %%1. Random cross validation for CUSTOM.
+    try
+    [accuracyCUSTOM(i),YValidationCUSTOM,YPredCUSTOM,info,rocObj]=CUSTOM(imdsTrain,imdsValidation,augimdsValidation,augimdsTrain,inputSize,0.0001,7,25,"adam",3);
+    cmCUSTOM(:,:,i) = confusionmat(YValidationCUSTOM,YPredCUSTOM);
+    infoCUSTOM{i} = info;
+    rocObjCUSTOM{i} = rocObj;
+    catch
+        accuracyCUSTOM(i),YValidationCUSTOM,YPredCUSTOM,info,rocObj=0
+    end
+
+    %%2. Random cross validation for VGG16.
+    try
+    [accuracyVGG16(i),YValidationVGG16,YPredVGG16,info,rocObj]= VGG16(imdsTrain,imdsValidation,augimdsValidation,augimdsTrain,0.0001,14,5,"sgdm");
+    cmVGG16(:,:,i) = confusionmat(YValidationVGG16,YPredVGG16);
+    infoVGG16{i} = info;
+    rocObjVGG16{i} = rocObj;
+    catch
+     accuracyVGG16(i),YValidationVGG16,YPredVGG16,info,rocObj=0
+    end
+
+    %%3. Random cross validation for Resnet50.
+    try
+    [accuracyResnet50(i),YValidationResnet50,YPredResnet50,info,rocObj]= Resnet50(imdsTrain,imdsValidation,augimdsValidation,augimdsTrain,0.001,14,25,"sgdm");
+    cmResnet50(:,:,i) = confusionmat(YValidationResnet50,YPredResnet50);
+    infoResnet50{i} = info;
+    rocObjResnet50{i} = rocObj;
+    catch
+        accuracyResnet50(i),YValidationResnet50,YPredResnet50,info,rocObj=0
+    end
+
+    %%4. Random cross validation for Alexnet.
+    try
+    [accuracyAlexnet(i),YValidationAlexnet,YPredAlexnet,info,rocObj]= Alexnet(imdsTrain,imdsValidation,augimdsValidation,augimdsTrain,0.0001,14,10,"adam");
+    cmAlexnet(:,:,i) = confusionmat(YValidationAlexnet,YPredAlexnet);
+    infoAlexnet{i} = info;
+    rocObjAlexnet{i} = rocObj;
+    catch
+        accuracyAlexnet(i),YValidationAlexnet,YPredAlexnet,info,rocObj=0
+    end
+end
+fprintf("Finished...\n")
+tEnd=toc;
+h=tEnd/60;
+fprintf(' %d hours and %d minutes and %f seconds\n',floor(h/ 60), floor(tEnd/60), rem(tEnd,60));
